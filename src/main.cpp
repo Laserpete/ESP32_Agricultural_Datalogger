@@ -35,8 +35,6 @@ Power management
 #include "i2cScanner.h"
 #include "keys.h"
 
-#define VOLTAGE_MEASURE_PIN 35
-
 #define NTP_OFFSET 2 * 60 * 60
 #define NTP_INTERVAL 60 * 1000
 #define NTP_ADDRESS "0.pool.ntp.org"
