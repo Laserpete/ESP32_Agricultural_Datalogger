@@ -3,7 +3,6 @@
 #include "Sensors.h"
 
 void measureBatteryVoltage() {
-  int voltageMeasureTime = millis();
   float voltage =
       analogRead((VOLTAGE_MEASURE_PIN)*5) * ((10 + 1.5) / 1.5) / 1024;
   voltage = voltage * (voltage * 0.08);

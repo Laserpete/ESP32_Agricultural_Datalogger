@@ -138,62 +138,48 @@ void printSensorDataCSV() {
 }
 
 void sendValuesToThingSpeak() {
-  while (!timeClient.update()) {
-    timeClient.forceUpdate();
+  float temperature = readHTU21dTemperature();
+  float humidity = readHTU21dHumidity();
+  int CO2Level = readCO2Level();
+  float probeTemp = readDS18B20Temp();
+  int luminosity = readVeml7700();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    // Domain name
+    http.begin(thingSpeakServerName);
+    // Specify Content Type Header
+    http.addHeader("Content-Type", "application/json");
+
+    // Data to send with HTTP POST
+    String httpRequestData = "{\"api_key\":\"" + apiKey + "\",\"field1\":\"" +
+                             temperature + "\",\"field2\":\"" + humidity +
+                             "\",\"field3\":\"" + CO2Level +
+                             "\",\"field4\":\"" + probeTemp +
+                             "\",\"field5\":\"" + luminosity + "\"}";
+
+    // Send HTTP POST request
+    int httpResponseCode = http.POST(httpRequestData);
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+
+    http.end();
+    Serial.println("Data sent");
+    printSensorDataCSV();
+    return;
+  } else {
+    Serial.println("WiFi Disconnected");
+    return;
   }
-  int minutesModuloValue = timeClient.getMinutes() % MEASUREMENT_MINUTES_MODULO;
+}
+bool shouldLog() {
+  timeClient.forceUpdate();
+  int currentTimeClientMinutes = timeClient.getMinutes();
+  Serial.print("Modulo of minutes = ");
+  Serial.println(currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO);
 
-  if (minutesModuloValue == 0) {
-    if (timeClient.getSeconds() == 0) {
-      Serial.print("Modulo of minutes = ");
-      Serial.println(minutesModuloValue);
-      float temperature = readHTU21dTemperature();
-      float humidity = readHTU21dHumidity();
-      int CO2Level = readCO2Level();
-      float probeTemp = readDS18B20Temp();
-      int luminosity = readVeml7700();
-      /*
-            char temperatureString[5];
-            char humidityString[5];
-            char CO2String[7];
-            char probeTempString[5];
-            char luminosityString[7];
-
-            dtostrf(temperature, 3, 1, temperatureString);
-            dtostrf(humidity, 4, 1, humidityString);
-            dtostrf(CO2Level, 5, 0, CO2String);
-            dtostrf(probeTemp, 3, 1, probeTempString);
-            dtostrf(luminosity, 5, 0, luminosityString);
-      */
-      if (WiFi.status() == WL_CONNECTED) {
-        HTTPClient http;
-        // Domain name
-        http.begin(thingSpeakServerName);
-        // Specify Content Type Header
-        http.addHeader("Content-Type", "application/json");
-
-        // Data to send with HTTP POST
-        String httpRequestData =
-            "{\"api_key\":\"" + apiKey + "\",\"field1\":\"" + temperature +
-            "\",\"field2\":\"" + humidity + "\",\"field3\":\"" + CO2Level +
-            "\",\"field4\":\"" + probeTemp + "\",\"field5\":\"" + luminosity +
-            "\"}";
-
-        // Send HTTP POST request
-        int httpResponseCode = http.POST(httpRequestData);
-        Serial.print("HTTP Response code: ");
-        Serial.println(httpResponseCode);
-
-        http.end();
-        Serial.println("Data sent");
-        printSensorDataCSV();
-        return;
-      } else {
-        Serial.println("WiFi Disconnected");
-        return;
-      }
-    }
-  }
+  return ((currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO == 0) &&
+          (timeClient.getSeconds() == 0));
 }
 
 void loop() {
@@ -203,7 +189,15 @@ void loop() {
   // printCO2Level();
   // printDS18B20Temp();
   // printCSV();
-  sendValuesToThingSpeak();
+  // int minutesModuloValue = timeClient.getMinutes() %
+  // MEASUREMENT_MINUTES_MODULO;
+
+  // if (minutesModuloValue == 0) {
+  // sendValuesToThingSpeak();
+  // }
+  if (shouldLog()) {
+    sendValuesToThingSpeak();
+  }
 
   // Serial.println();
   // delay(10000);
