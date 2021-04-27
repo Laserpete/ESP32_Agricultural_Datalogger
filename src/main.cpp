@@ -92,51 +92,6 @@ void setup() {
   setupWiFi();
 }
 
-void printSensorDataCSV() {
-  float temperature = readHTU21dTemperature();
-  float humidity = readHTU21dHumidity();
-  int CO2Level = readCO2Level();
-  float probeTemp = readDS18B20Temp();
-  int luminosity = readVeml7700();
-
-  char temperatureString[5];
-  char humidityString[5];
-  char CO2String[7];
-  char probeTempString[5];
-  char luminosityString[7];
-
-  dtostrf(temperature, 3, 1, temperatureString);
-  dtostrf(humidity, 4, 1, humidityString);
-  dtostrf(CO2Level, 5, 0, CO2String);
-  dtostrf(probeTemp, 3, 1, probeTempString);
-  dtostrf(luminosity, 5, 0, luminosityString);
-
-  while (!timeClient.update()) {
-    timeClient.forceUpdate();
-  }
-  time_t rawtime = timeClient.getEpochTime();
-  struct tm ts;
-
-  char dateStamp[11];
-  char timeStamp[9];
-
-  ts = *localtime(&rawtime);
-
-  strftime(dateStamp, sizeof(dateStamp), "%Y-%m-%d", &ts);
-  strftime(timeStamp, sizeof(timeStamp), "%H:%M:%S", &ts);
-
-  char commaSeparatedValuesOutput[80];
-
-  snprintf_P(commaSeparatedValuesOutput, countof(commaSeparatedValuesOutput),
-             PSTR("%s, %s, %s, %s, %s, %s, %s"), dateStamp, timeStamp,
-             temperatureString, humidityString, CO2String, probeTempString,
-             luminosityString);
-  Serial.println();
-  Serial.println(commaSeparatedValuesOutput);
-  measureBatteryVoltage();
-  Serial.println();
-}
-
 typedef struct _SensorValues {
   float temperature;
   float humidity;
@@ -156,7 +111,46 @@ SensorValues getSensorValues() {
   return getValuesStruct;
 }
 
-void sendDataToThingSpeak(String thingSpeakPostString) {
+void printSensorDataCSV(SensorValues receivedSensorValues) {
+  char temperatureString[5];
+  char humidityString[5];
+  char cO2String[7];
+  char probeTempString[5];
+  char luminosityString[7];
+
+  dtostrf(receivedSensorValues.temperature, 3, 1, temperatureString);
+  dtostrf(receivedSensorValues.humidity, 4, 1, humidityString);
+  dtostrf(receivedSensorValues.cO2Level, 5, 0, cO2String);
+  dtostrf(receivedSensorValues.probeTemp, 3, 1, probeTempString);
+  dtostrf(receivedSensorValues.luminosity, 5, 0, luminosityString);
+
+  while (!timeClient.update()) {
+    timeClient.forceUpdate();
+  }
+  time_t rawtime = timeClient.getEpochTime();
+  struct tm ts;
+
+  char dateStamp[11];
+  char timeStamp[9];
+
+  ts = *localtime(&rawtime);
+
+  strftime(dateStamp, sizeof(dateStamp), "%Y-%m-%d", &ts);
+  strftime(timeStamp, sizeof(timeStamp), "%H:%M:%S", &ts);
+
+  char commaSeparatedValuesOutput[80];
+
+  snprintf_P(commaSeparatedValuesOutput, countof(commaSeparatedValuesOutput),
+             PSTR("%s, %s, %s, %s, %s, %s, %s"), dateStamp, timeStamp,
+             temperatureString, humidityString, cO2String, probeTempString,
+             luminosityString);
+  Serial.println();
+  Serial.println(commaSeparatedValuesOutput);
+  measureBatteryVoltage();
+  Serial.println();
+}
+
+void postDataToThingSpeak(String thingSpeakPostString) {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi Disconnected");
     return;
@@ -174,18 +168,20 @@ void sendDataToThingSpeak(String thingSpeakPostString) {
 
   http.end();
   Serial.println("Data sent");
-  printSensorDataCSV();
+}
+
+void logToThingSpeak(SensorValues receivedValues) {
+  postDataToThingSpeak("{\"api_key\":\"" + apiKey + "\",\"field1\":\"" +
+                       receivedValues.temperature + "\",\"field2\":\"" +
+                       receivedValues.humidity + "\",\"field3\":\"" +
+                       receivedValues.cO2Level + "\",\"field4\":\"" +
+                       receivedValues.probeTemp + "\",\"field5\":\"" +
+                       receivedValues.luminosity + "\"}");
 }
 
 void logValues(SensorValues receivedValues) {
-  String thingSpeakPostString =
-      "{\"api_key\":\"" + apiKey + "\",\"field1\":\"" +
-      receivedValues.temperature + "\",\"field2\":\"" +
-      receivedValues.humidity + "\",\"field3\":\"" + receivedValues.cO2Level +
-      "\",\"field4\":\"" + receivedValues.probeTemp + "\",\"field5\":\"" +
-      receivedValues.luminosity + "\"}";
-
-  sendDataToThingSpeak(thingSpeakPostString);
+  logToThingSpeak(receivedValues);
+  printSensorDataCSV(receivedValues);
 }
 
 bool shouldLog() {
@@ -199,24 +195,7 @@ bool shouldLog() {
 }
 
 void loop() {
-  // printHTU21D();
-  // printBME280();
-  // printVeml7700();
-  // printCO2Level();
-  // printDS18B20Temp();
-  // printCSV();
-  // int minutesModuloValue = timeClient.getMinutes() %
-  // MEASUREMENT_MINUTES_MODULO;
-
-  // if (minutesModuloValue == 0) {
-  // sendValuesToThingSpeak();
-  // }
-  // choose values to log
-
   if (shouldLog()) {
     logValues(getSensorValues());
   }
-
-  // Serial.println();
-  // delay(10000);
 }
