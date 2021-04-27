@@ -27,4 +27,6 @@ void setupDS18B20(void);
 float readDS18B20Temp(void);
 void printDS18B20Temp(void);
 
+void measureBatteryVoltage(void);
+
 #endif

@@ -13,6 +13,9 @@ Processing
 
 Logging
   Send to ThingSpeak
+  Value averaging
+  Ignore obviously wrong values
+
 
 Connectivity
   WiFi
@@ -22,6 +25,15 @@ Connectivity
 Power management
   Battery voltage sensing (on Pin IO35)
   Sleep mode between measurements
+
+*/
+
+/* Problems
+
+  Reading twice, somehow ignoring if statement
+  Inside temperature is higher than ambient, giving false temperature and
+  humidity readings
+
 */
 
 #include <Arduino.h>
@@ -78,19 +90,6 @@ void setup() {
   // Scanner();
   setupSensors();
   setupWiFi();
-}
-
-void measureBatteryVoltage() {
-  int voltageMeasureTime = millis();
-  float voltage =
-      analogRead((VOLTAGE_MEASURE_PIN)*5) * ((10 + 1.5) / 1.5) / 1024;
-  voltage = voltage * (voltage * 0.08);
-  Serial.print("Current battery voltage = ");
-  Serial.print(voltage);
-  Serial.println(" V");
-  if (voltage >= 3.7) {
-    Serial.println("Battery is fully charged");
-  }
 }
 
 void printSensorDataCSV() {
