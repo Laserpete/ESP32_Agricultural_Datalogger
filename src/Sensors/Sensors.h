@@ -1,6 +1,8 @@
 #ifndef HTU21D_H
 #define HTU21D_H
 
+#define VOLTAGE_MEASURE_PIN 35
+
 void setupSensors(void);
 
 void setupHTU21D(void);

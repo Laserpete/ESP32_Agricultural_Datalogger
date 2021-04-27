@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 #include "Sensors.h"
 
 void setupSensors() {
@@ -6,4 +8,5 @@ void setupSensors() {
   setupVeml7700();
   setupMHZ16();
   setupDS18B20();
+  pinMode(VOLTAGE_MEASURE_PIN, INPUT);
 }
