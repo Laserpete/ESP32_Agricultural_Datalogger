@@ -137,13 +137,26 @@ void printSensorDataCSV() {
   Serial.println();
 }
 
-void sendValuesToThingSpeak() {
-  float temperature = readHTU21dTemperature();
-  float humidity = readHTU21dHumidity();
-  int CO2Level = readCO2Level();
-  float probeTemp = readDS18B20Temp();
-  int luminosity = readVeml7700();
+typedef struct _SensorValues {
+  float temperature;
+  float humidity;
+  int cO2Level;
+  float probeTemp;
+  int luminosity;
+  // float internalHumidity;
+  // float internalTemperature;
+} SensorValues;
 
+SensorValues getSensorValues() {
+  SensorValues getValuesStruct = {.temperature = readHTU21dTemperature(),
+                                  .humidity = readHTU21dHumidity(),
+                                  .cO2Level = readCO2Level(),
+                                  .probeTemp = readDS18B20Temp(),
+                                  .luminosity = readVeml7700()};
+  return getValuesStruct;
+}
+
+void logValues(SensorValues receivedValues) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     // Domain name
@@ -153,10 +166,11 @@ void sendValuesToThingSpeak() {
 
     // Data to send with HTTP POST
     String httpRequestData = "{\"api_key\":\"" + apiKey + "\",\"field1\":\"" +
-                             temperature + "\",\"field2\":\"" + humidity +
-                             "\",\"field3\":\"" + CO2Level +
-                             "\",\"field4\":\"" + probeTemp +
-                             "\",\"field5\":\"" + luminosity + "\"}";
+                             receivedValues.temperature + "\",\"field2\":\"" +
+                             receivedValues.humidity + "\",\"field3\":\"" +
+                             receivedValues.cO2Level + "\",\"field4\":\"" +
+                             receivedValues.probeTemp + "\",\"field5\":\"" +
+                             receivedValues.luminosity + "\"}";
 
     // Send HTTP POST request
     int httpResponseCode = http.POST(httpRequestData);
@@ -195,8 +209,10 @@ void loop() {
   // if (minutesModuloValue == 0) {
   // sendValuesToThingSpeak();
   // }
+  // choose values to log
+
   if (shouldLog()) {
-    sendValuesToThingSpeak();
+    logValues(getSensorValues());
   }
 
   // Serial.println();
