@@ -9,15 +9,19 @@ Sensors
 
 Processing
   Comma separated Values output
-
+  JSON output
 
 Logging
-  Send to google sheets
+  Send to ThingSpeak
 
+Connectivity
+  WiFi
+  Bluetooth Serial
+  OTA updates
 
-Bluetooth Serial
-
-
+Power management
+  Battery voltage sensing (on Pin IO35)
+  Sleep mode between measurements
 */
 
 #include <Arduino.h>
@@ -30,6 +34,8 @@ Bluetooth Serial
 #include "Sensors/Sensors.h"
 #include "i2cScanner.h"
 #include "keys.h"
+
+#define VOLTAGE_MEASURE_PIN 35
 
 #define NTP_OFFSET 2 * 60 * 60
 #define NTP_INTERVAL 60 * 1000
@@ -76,6 +82,19 @@ void setup() {
   setupWiFi();
 }
 
+void measureBatteryVoltage() {
+  int voltageMeasureTime = millis();
+  float voltage =
+      analogRead((VOLTAGE_MEASURE_PIN)*5) * ((10 + 1.5) / 1.5) / 1024;
+  voltage = voltage * (voltage * 0.08);
+  Serial.print("Current battery voltage = ");
+  Serial.print(voltage);
+  Serial.println(" V");
+  if (voltage >= 3.7) {
+    Serial.println("Battery is fully charged");
+  }
+}
+
 void printSensorDataCSV() {
   float temperature = readHTU21dTemperature();
   float humidity = readHTU21dHumidity();
@@ -117,6 +136,7 @@ void printSensorDataCSV() {
              luminosityString);
   Serial.println();
   Serial.println(commaSeparatedValuesOutput);
+  measureBatteryVoltage();
   Serial.println();
 }
 
