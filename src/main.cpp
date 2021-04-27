@@ -156,36 +156,38 @@ SensorValues getSensorValues() {
   return getValuesStruct;
 }
 
-void logValues(SensorValues receivedValues) {
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-    // Domain name
-    http.begin(thingSpeakServerName);
-    // Specify Content Type Header
-    http.addHeader("Content-Type", "application/json");
-
-    // Data to send with HTTP POST
-    String httpRequestData = "{\"api_key\":\"" + apiKey + "\",\"field1\":\"" +
-                             receivedValues.temperature + "\",\"field2\":\"" +
-                             receivedValues.humidity + "\",\"field3\":\"" +
-                             receivedValues.cO2Level + "\",\"field4\":\"" +
-                             receivedValues.probeTemp + "\",\"field5\":\"" +
-                             receivedValues.luminosity + "\"}";
-
-    // Send HTTP POST request
-    int httpResponseCode = http.POST(httpRequestData);
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
-
-    http.end();
-    Serial.println("Data sent");
-    printSensorDataCSV();
-    return;
-  } else {
+void sendDataToThingSpeak(String thingSpeakPostString) {
+  if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi Disconnected");
     return;
   }
+  HTTPClient http;
+  // Domain name
+  http.begin(thingSpeakServerName);
+  // Specify Content Type Header
+  http.addHeader("Content-Type", "application/json");
+
+  // Send HTTP POST request
+  int httpResponseCode = http.POST(thingSpeakPostString);
+  Serial.print("HTTP Response code: ");
+  Serial.println(httpResponseCode);
+
+  http.end();
+  Serial.println("Data sent");
+  printSensorDataCSV();
 }
+
+void logValues(SensorValues receivedValues) {
+  String thingSpeakPostString =
+      "{\"api_key\":\"" + apiKey + "\",\"field1\":\"" +
+      receivedValues.temperature + "\",\"field2\":\"" +
+      receivedValues.humidity + "\",\"field3\":\"" + receivedValues.cO2Level +
+      "\",\"field4\":\"" + receivedValues.probeTemp + "\",\"field5\":\"" +
+      receivedValues.luminosity + "\"}";
+
+  sendDataToThingSpeak(thingSpeakPostString);
+}
+
 bool shouldLog() {
   timeClient.forceUpdate();
   int currentTimeClientMinutes = timeClient.getMinutes();
