@@ -51,7 +51,7 @@ Power management
 #define NTP_INTERVAL 60 * 1000
 #define NTP_ADDRESS "0.pool.ntp.org"
 
-#define MEASUREMENT_MINUTES_MODULO 5
+#define MEASUREMENT_MINUTES_MODULO 1
 
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 
@@ -90,6 +90,7 @@ void setup() {
   // Scanner();
   setupSensors();
   setupWiFi();
+  Serial.println("Setup Finished");
 }
 
 typedef struct _SensorValues {
@@ -187,8 +188,8 @@ void logValues(SensorValues receivedValues) {
 bool shouldLog() {
   timeClient.forceUpdate();
   int currentTimeClientMinutes = timeClient.getMinutes();
-  Serial.print("Modulo of minutes = ");
-  Serial.println(currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO);
+  // Serial.print("Modulo of minutes = ");
+  // Serial.println(currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO);
 
   return ((currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO == 0) &&
           (timeClient.getSeconds() == 0));
