@@ -7,8 +7,9 @@
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
 
 void setupSHT31(void) {
-  sht31.begin(0x44);
-  Serial.println("SHT31 setup");
+  while (!sht31.begin(0x44)) {
+  };
+  Serial.println("SHT31 ready");
 }
 
 float readSHT31Temperature(void) {

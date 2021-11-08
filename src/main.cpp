@@ -31,8 +31,6 @@ Power management
 /* Problems
 
   Reading twice, somehow ignoring if statement
-  Inside temperature is higher than ambient, giving false temperature and
-  humidity readings
 
 */
 
@@ -57,7 +55,6 @@ Power management
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, NTP_ADDRESS, NTP_OFFSET, NTP_INTERVAL);
-
 const char* thingSpeakServerName = "http://api.thingspeak.com/update";
 
 void setupWiFi() {
@@ -95,21 +92,24 @@ void setup() {
 }
 
 typedef struct _SensorValues {
-  float temperature;
-  float humidity;
+  float internalTemperature;
+  float internalHumidity;
   int cO2Level;
-  float probeTemp;
+  float SHT31probeTemp;
+  float SHT31probeHumidity;
   int luminosity;
   // float internalHumidity;
   // float internalTemperature;
 } SensorValues;
 
 SensorValues getSensorValues() {
-  SensorValues getValuesStruct = {.temperature = readHTU21dTemperature(),
-                                  .humidity = readHTU21dHumidity(),
-                                  .cO2Level = readCO2Level(),
-                                  .probeTemp = readDS18B20Temp(),
-                                  .luminosity = readVeml7700()};
+  SensorValues getValuesStruct = {
+      .internalTemperature = readBME280Temperature(),
+      .internalHumidity = readBME280Humidity(),
+      .cO2Level = readCO2Level(),
+      .SHT31probeTemp = readSHT31Temperature(),
+      .SHT31probeHumidity = readSHT31Humidity(),
+      .luminosity = readVeml7700()};
   return getValuesStruct;
 }
 
@@ -117,13 +117,11 @@ void printSensorDataCSV(SensorValues receivedSensorValues) {
   char temperatureString[5];
   char humidityString[5];
   char cO2String[7];
-  char probeTempString[5];
   char luminosityString[7];
 
-  dtostrf(receivedSensorValues.temperature, 3, 1, temperatureString);
-  dtostrf(receivedSensorValues.humidity, 4, 1, humidityString);
+  dtostrf(receivedSensorValues.SHT31probeTemp, 3, 1, temperatureString);
+  dtostrf(receivedSensorValues.SHT31probeHumidity, 4, 1, humidityString);
   dtostrf(receivedSensorValues.cO2Level, 5, 0, cO2String);
-  dtostrf(receivedSensorValues.probeTemp, 3, 1, probeTempString);
   dtostrf(receivedSensorValues.luminosity, 5, 0, luminosityString);
 
   while (!timeClient.update()) {
@@ -143,9 +141,8 @@ void printSensorDataCSV(SensorValues receivedSensorValues) {
   char commaSeparatedValuesOutput[80];
 
   snprintf_P(commaSeparatedValuesOutput, countof(commaSeparatedValuesOutput),
-             PSTR("%s, %s, %s, %s, %s, %s, %s"), dateStamp, timeStamp,
-             temperatureString, humidityString, cO2String, probeTempString,
-             luminosityString);
+             PSTR("%s, %s, %s, %s, %s, %s"), dateStamp, timeStamp,
+             temperatureString, humidityString, cO2String, luminosityString);
   Serial.println();
   Serial.println(commaSeparatedValuesOutput);
   measureBatteryVoltage();
@@ -174,10 +171,9 @@ void postDataToThingSpeak(String thingSpeakPostString) {
 
 void logToThingSpeak(SensorValues receivedValues) {
   postDataToThingSpeak("{\"api_key\":\"" + apiKey + "\",\"field1\":\"" +
-                       receivedValues.temperature + "\",\"field2\":\"" +
-                       receivedValues.humidity + "\",\"field3\":\"" +
+                       receivedValues.SHT31probeTemp + "\",\"field2\":\"" +
+                       receivedValues.SHT31probeHumidity + "\",\"field3\":\"" +
                        receivedValues.cO2Level + "\",\"field4\":\"" +
-                       receivedValues.probeTemp + "\",\"field5\":\"" +
                        receivedValues.luminosity + "\"}");
 }
 
@@ -186,6 +182,7 @@ void logValues(SensorValues receivedValues) {
   printSensorDataCSV(receivedValues);
   printSHT31();
   printCO2Level();
+  printBME280();
 }
 
 bool shouldLog() {

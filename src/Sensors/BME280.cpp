@@ -22,7 +22,7 @@ int readBME280Humidity() { return bme280.readHumidity(); }
 void printBME280(void) {
   bme280.takeForcedMeasurement();
   Serial.print("BME280 Temp = ");
-  Serial.println(bme280.readTemperature());
-  Serial.print("BME280 Humid = ");
+  Serial.print(bme280.readTemperature());
+  Serial.print(" Humid = ");
   Serial.println(bme280.readHumidity());
 }
