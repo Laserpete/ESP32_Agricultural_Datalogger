@@ -29,4 +29,9 @@ void printDS18B20Temp(void);
 
 void measureBatteryVoltage(void);
 
+void setupSHT31(void);
+float readSHT31Temperature(void);
+float readSHT31Humidity(void);
+void printSHT31(void);
+
 #endif

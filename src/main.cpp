@@ -87,9 +87,10 @@ void setup() {
   }
   Wire.begin(21, 22);
 
-  // Scanner();
+  Scanner();
   setupSensors();
   setupWiFi();
+  measureBatteryVoltage();
   Serial.println("Setup Finished");
 }
 
@@ -183,6 +184,8 @@ void logToThingSpeak(SensorValues receivedValues) {
 void logValues(SensorValues receivedValues) {
   logToThingSpeak(receivedValues);
   printSensorDataCSV(receivedValues);
+  printSHT31();
+  printCO2Level();
 }
 
 bool shouldLog() {
