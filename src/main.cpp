@@ -43,7 +43,7 @@ Power management
 #include "header.h"
 
 #include "Sensors/Sensors.h"
-#include "i2cScanner.h"
+#include "IIC/i2cScanner.h"
 #include "keys.h"
 
 
