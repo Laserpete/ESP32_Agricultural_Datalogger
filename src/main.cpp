@@ -7,14 +7,14 @@ Sensors
   VMEL7700
   DS18B20
 
-Processing
+Formatting
   Comma separated Values output
   JSON output
 
 Logging
   Send to ThingSpeak
+  CRC
   Value averaging
-  Ignore obviously wrong values
 
 
 Connectivity
@@ -28,9 +28,8 @@ Power management
 
 */
 
-/* Problems
+/* Issues
 
-  Reading twice, somehow ignoring if statement
 
 */
 
@@ -44,65 +43,96 @@ Power management
 #include "Sensors/Sensors.h"
 #include "i2cScanner.h"
 #include "keys.h"
+#include <BluetoothSerial.h>
+
+#define DEBUG
 
 #define NTP_OFFSET 2 * 60 * 60
 #define NTP_INTERVAL 60 * 1000
 #define NTP_ADDRESS "0.pool.ntp.org"
 
+#define WIFI_CONNECT_SECONDS 10
 #define MEASUREMENT_MINUTES_MODULO 1
 
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 
+#if !defined (CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run 'make menuconfig# to enable it'
+#endif
+
+BluetoothSerial SerialBT;
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, NTP_ADDRESS, NTP_OFFSET, NTP_INTERVAL);
-const char* thingSpeakServerName = "http://api.thingspeak.com/update";
+const char *thingSpeakServerName = "http://api.thingspeak.com/update";
+long long lastMillis = 0;
+bool wifiGo = 0;
 
-void setupWiFi() {
-  int wifiTimer = millis();
+void setupBluetooth(){
+  SerialBT.begin("ESP32Test");
+Serial.println("Bluetooth started, try to pair.");
+}
+
+bool setupWiFi()
+{
   Serial.print("Connecting to ");
   Serial.println(ssid);
+  lastMillis = millis();
   WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
+  while ((millis() <= (WIFI_CONNECT_SECONDS * 1000)) && (WiFi.status() != WL_CONNECTED))
+  {
     delay(500);
     Serial.print(".");
   }
-  Serial.println();
-  Serial.print("WiFi connected in: ");
-  Serial.print(millis() - wifiTimer);
-  Serial.println(" mS");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
 
-  timeClient.begin();
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    Serial.println();
+    Serial.print("Connected in ");
+    Serial.print(millis() - lastMillis);
+    Serial.println(" mS");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    timeClient.begin();
+    return 1;
+  }
+  else
+  {
+    Serial.println();
+    Serial.println("Wifi not connected");
+    return 0;
+  }
+  lastMillis = 0;
 }
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
-  while (!Serial) {
+  while (!Serial)
+  {
     ;
   }
   Wire.begin(21, 22);
-
-  Scanner();
+setupBluetooth();
+  IICScanner();
   setupSensors();
-  setupWiFi();
+  bool wifiGo = setupWiFi();
   measureBatteryVoltage();
   Serial.println("Setup Finished");
+  Serial.println();
 }
 
-typedef struct _SensorValues {
+typedef struct _SensorValues
+{
   float internalTemperature;
-  float internalHumidity;
+  int internalHumidity;
   int cO2Level;
   float SHT31probeTemp;
   float SHT31probeHumidity;
   int luminosity;
-  // float internalHumidity;
-  // float internalTemperature;
 } SensorValues;
 
-SensorValues getSensorValues() {
+SensorValues getSensorValues()
+{
   SensorValues getValuesStruct = {
       .internalTemperature = readBME280Temperature(),
       .internalHumidity = readBME280Humidity(),
@@ -113,7 +143,8 @@ SensorValues getSensorValues() {
   return getValuesStruct;
 }
 
-void printSensorDataCSV(SensorValues receivedSensorValues) {
+void printSensorDataCSV(SensorValues receivedSensorValues)
+{
   char temperatureString[5];
   char humidityString[5];
   char cO2String[7];
@@ -124,7 +155,8 @@ void printSensorDataCSV(SensorValues receivedSensorValues) {
   dtostrf(receivedSensorValues.cO2Level, 5, 0, cO2String);
   dtostrf(receivedSensorValues.luminosity, 5, 0, luminosityString);
 
-  while (!timeClient.update()) {
+  if (!timeClient.update())
+  {
     timeClient.forceUpdate();
   }
   time_t rawtime = timeClient.getEpochTime();
@@ -149,8 +181,10 @@ void printSensorDataCSV(SensorValues receivedSensorValues) {
   Serial.println();
 }
 
-void postDataToThingSpeak(String thingSpeakPostString) {
-  if (WiFi.status() != WL_CONNECTED) {
+void postDataToThingSpeak(String thingSpeakPostString)
+{
+  if (WiFi.status() != WL_CONNECTED)
+  {
     Serial.println("WiFi Disconnected");
     return;
   }
@@ -169,7 +203,8 @@ void postDataToThingSpeak(String thingSpeakPostString) {
   Serial.println("Data sent");
 }
 
-void logToThingSpeak(SensorValues receivedValues) {
+void logToThingSpeak(SensorValues receivedValues)
+{
   postDataToThingSpeak("{\"api_key\":\"" + apiKey + "\",\"field1\":\"" +
                        receivedValues.SHT31probeTemp + "\",\"field2\":\"" +
                        receivedValues.SHT31probeHumidity + "\",\"field3\":\"" +
@@ -177,26 +212,65 @@ void logToThingSpeak(SensorValues receivedValues) {
                        receivedValues.luminosity + "\"}");
 }
 
-void logValues(SensorValues receivedValues) {
-  logToThingSpeak(receivedValues);
-  printSensorDataCSV(receivedValues);
+void logValues(SensorValues receivedValues)
+{
+  if (wifiGo)
+  {
+    logToThingSpeak(receivedValues);
+  }
+  //printSensorDataCSV(receivedValues);
+  #ifdef DEBUG
   printSHT31();
-  printCO2Level();
   printBME280();
+  printCO2Level();
+  printVeml7700();
+  Serial.print("\n");
+  #endif
 }
 
-bool shouldLog() {
-  timeClient.forceUpdate();
-  int currentTimeClientMinutes = timeClient.getMinutes();
-  // Serial.print("Modulo of minutes = ");
-  // Serial.println(currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO);
-
-  return ((currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO == 0) &&
-          (timeClient.getSeconds() == 0));
+bool shouldLog()
+{
+  if (wifiGo)
+  {
+    timeClient.forceUpdate();
+    int currentTimeClientMinutes = timeClient.getMinutes();
+#ifdef DEBUG
+    Serial.print("Modulo of minutes = ");
+    Serial.println(currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO);
+#endif
+    return ((currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO == 0) &&
+            (timeClient.getSeconds() == 0));
+    // Also need a latch here since this is probably the cause of double readings - logging twice in the second
+  }
+  else if (!wifiGo)
+  {
+    if (millis() >= (lastMillis + (MEASUREMENT_MINUTES_MODULO * 60 * 1000)))
+    {
+      lastMillis = millis();
+      return 1;
+    }
+    else
+      return 0;
+  }
 }
 
-void loop() {
-  if (shouldLog()) {
-    logValues(getSensorValues());
+void writeToBluetoothSerial(SensorValues receivedValues){
+
+    SerialBT.print("Probe Temperature = ");
+    SerialBT.print(receivedValues.SHT31probeTemp);
+    SerialBT.println(" Celcius");
+    SerialBT.print("Probe Humidity = ");
+    SerialBT.print(receivedValues.SHT31probeHumidity);
+    SerialBT.println(" RH");
+}
+
+void loop()
+{if(SerialBT.available()){
+  Serial.write(SerialBT.read());}
+  if (shouldLog())
+  {
+    SensorValues currentValues = getSensorValues();
+    logValues(currentValues);
+    writeToBluetoothSerial(currentValues);
   }
 }

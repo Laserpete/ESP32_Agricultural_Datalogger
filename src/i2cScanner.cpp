@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-void Scanner() {
+void IICScanner() {
   Serial.println();
   Serial.println("I2C scanner. Scanning ...");
   byte count = 0;

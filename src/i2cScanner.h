@@ -1,1 +1,1 @@
-void Scanner(void);
+void IICScanner(void);
