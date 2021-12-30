@@ -40,10 +40,12 @@ Power management
 #include <WiFiUdp.h>
 #include <Wire.h>
 
+#include "header.h"
+
 #include "Sensors/Sensors.h"
 #include "i2cScanner.h"
 #include "keys.h"
-#include <BluetoothSerial.h>
+
 
 #define DEBUG
 
@@ -60,17 +62,13 @@ Power management
 #error Bluetooth is not enabled! Please run 'make menuconfig# to enable it'
 #endif
 
-BluetoothSerial SerialBT;
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, NTP_ADDRESS, NTP_OFFSET, NTP_INTERVAL);
 const char *thingSpeakServerName = "http://api.thingspeak.com/update";
 long long lastMillis = 0;
 bool wifiGo = 0;
 
-void setupBluetooth(){
-  SerialBT.begin("ESP32Test");
-Serial.println("Bluetooth started, try to pair.");
-}
+
 
 bool setupWiFi()
 {
@@ -121,15 +119,7 @@ setupBluetooth();
   Serial.println();
 }
 
-typedef struct _SensorValues
-{
-  float internalTemperature;
-  int internalHumidity;
-  int cO2Level;
-  float SHT31probeTemp;
-  float SHT31probeHumidity;
-  int luminosity;
-} SensorValues;
+
 
 SensorValues getSensorValues()
 {
@@ -254,19 +244,11 @@ bool shouldLog()
   }
 }
 
-void writeToBluetoothSerial(SensorValues receivedValues){
 
-    SerialBT.print("Probe Temperature = ");
-    SerialBT.print(receivedValues.SHT31probeTemp);
-    SerialBT.println(" Celcius");
-    SerialBT.print("Probe Humidity = ");
-    SerialBT.print(receivedValues.SHT31probeHumidity);
-    SerialBT.println(" RH");
-}
 
 void loop()
-{if(SerialBT.available()){
-  Serial.write(SerialBT.read());}
+{
+  BTtoUART();
   if (shouldLog())
   {
     SensorValues currentValues = getSensorValues();
