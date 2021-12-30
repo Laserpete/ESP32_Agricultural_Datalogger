@@ -1,3 +1,5 @@
+#ifndef _HEADER_H_
+#define _HEADER_H_
 
 typedef struct _SensorValues
 {
@@ -12,3 +14,5 @@ typedef struct _SensorValues
 void setupBluetooth();
 void writeToBluetoothSerial(SensorValues);
 void BTtoUART();
+
+#endif

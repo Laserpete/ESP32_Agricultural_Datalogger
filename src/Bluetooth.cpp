@@ -25,6 +25,7 @@ void writeToBluetoothSerial(SensorValues receivedValues){
     SerialBT.print("Luminosity =");
     SerialBT.print(receivedValues.luminosity);
     SerialBT.println(" Lux");
+    SerialBT.println();
 }
 
 void BTtoUART(){if(SerialBT.available()){
