@@ -40,12 +40,10 @@ Power management
 #include <WiFiUdp.h>
 #include <Wire.h>
 
-#include "header.h"
-
-#include "Sensors/Sensors.h"
 #include "IIC/i2cScanner.h"
+#include "Sensors/Sensors.h"
+#include "header.h"
 #include "keys.h"
-
 
 #define DEBUG
 
@@ -58,7 +56,7 @@ Power management
 
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 
-#if !defined (CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run 'make menuconfig# to enable it'
 #endif
 
@@ -68,22 +66,18 @@ const char *thingSpeakServerName = "http://api.thingspeak.com/update";
 long long lastMillis = 0;
 bool wifiGo = 0;
 
-
-
-bool setupWiFi()
-{
+bool setupWiFi() {
   Serial.print("Connecting to ");
   Serial.println(ssid);
   lastMillis = millis();
   WiFi.begin(ssid, password);
-  while ((millis() <= (WIFI_CONNECT_SECONDS * 1000)) && (WiFi.status() != WL_CONNECTED))
-  {
+  while ((millis() <= (WIFI_CONNECT_SECONDS * 1000)) &&
+         (WiFi.status() != WL_CONNECTED)) {
     delay(500);
     Serial.print(".");
   }
 
-  if (WiFi.status() == WL_CONNECTED)
-  {
+  if (WiFi.status() == WL_CONNECTED) {
     Serial.println();
     Serial.print("Connected in ");
     Serial.print(millis() - lastMillis);
@@ -92,9 +86,7 @@ bool setupWiFi()
     Serial.println(WiFi.localIP());
     timeClient.begin();
     return 1;
-  }
-  else
-  {
+  } else {
     Serial.println();
     Serial.println("Wifi not connected");
     return 0;
@@ -102,27 +94,22 @@ bool setupWiFi()
   lastMillis = 0;
 }
 
-void setup()
-{
+void setup() {
   Serial.begin(115200);
-  while (!Serial)
-  {
+  while (!Serial) {
     ;
   }
   Wire.begin(21, 22);
-setupBluetooth();
+  setupBluetooth();
   IICScanner();
   setupSensors();
-  bool wifiGo = setupWiFi();
+  wifiGo = setupWiFi();
   measureBatteryVoltage();
   Serial.println("Setup Finished");
   Serial.println();
 }
 
-
-
-SensorValues getSensorValues()
-{
+SensorValues getSensorValues() {
   SensorValues getValuesStruct = {
       .internalTemperature = readBME280Temperature(),
       .internalHumidity = readBME280Humidity(),
@@ -133,8 +120,7 @@ SensorValues getSensorValues()
   return getValuesStruct;
 }
 
-void printSensorDataCSV(SensorValues receivedSensorValues)
-{
+void printSensorDataCSV(SensorValues receivedSensorValues) {
   char temperatureString[5];
   char humidityString[5];
   char cO2String[7];
@@ -145,8 +131,7 @@ void printSensorDataCSV(SensorValues receivedSensorValues)
   dtostrf(receivedSensorValues.cO2Level, 5, 0, cO2String);
   dtostrf(receivedSensorValues.luminosity, 5, 0, luminosityString);
 
-  if (!timeClient.update())
-  {
+  if (!timeClient.update()) {
     timeClient.forceUpdate();
   }
   time_t rawtime = timeClient.getEpochTime();
@@ -171,10 +156,8 @@ void printSensorDataCSV(SensorValues receivedSensorValues)
   Serial.println();
 }
 
-void postDataToThingSpeak(String thingSpeakPostString)
-{
-  if (WiFi.status() != WL_CONNECTED)
-  {
+void postDataToThingSpeak(String thingSpeakPostString) {
+  if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi Disconnected");
     return;
   }
@@ -193,8 +176,7 @@ void postDataToThingSpeak(String thingSpeakPostString)
   Serial.println("Data sent");
 }
 
-void logToThingSpeak(SensorValues receivedValues)
-{
+void logToThingSpeak(SensorValues receivedValues) {
   postDataToThingSpeak("{\"api_key\":\"" + apiKey + "\",\"field1\":\"" +
                        receivedValues.SHT31probeTemp + "\",\"field2\":\"" +
                        receivedValues.SHT31probeHumidity + "\",\"field3\":\"" +
@@ -202,26 +184,22 @@ void logToThingSpeak(SensorValues receivedValues)
                        receivedValues.luminosity + "\"}");
 }
 
-void logValues(SensorValues receivedValues)
-{
-  if (wifiGo)
-  {
+void logValues(SensorValues receivedValues) {
+  if (wifiGo) {
     logToThingSpeak(receivedValues);
   }
-  //printSensorDataCSV(receivedValues);
-  #ifdef DEBUG
+// printSensorDataCSV(receivedValues);
+#ifdef DEBUG
   printSHT31();
   printBME280();
   printCO2Level();
   printVeml7700();
   Serial.print("\n");
-  #endif
+#endif
 }
 
-bool shouldLog()
-{
-  if (wifiGo)
-  {
+bool shouldLog() {
+  if (wifiGo) {
     timeClient.forceUpdate();
     int currentTimeClientMinutes = timeClient.getMinutes();
 #ifdef DEBUG
@@ -230,27 +208,20 @@ bool shouldLog()
 #endif
     return ((currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO == 0) &&
             (timeClient.getSeconds() == 0));
-    // Also need a latch here since this is probably the cause of double readings - logging twice in the second
-  }
-  else if (!wifiGo)
-  {
-    if (millis() >= (lastMillis + (MEASUREMENT_MINUTES_MODULO * 60 * 1000)))
-    {
+    // Also need a latch here since this is probably the cause of double
+    // readings - logging twice in the second
+  } else if (!wifiGo) {
+    if (millis() >= (lastMillis + (MEASUREMENT_MINUTES_MODULO * 60 * 1000))) {
       lastMillis = millis();
       return 1;
-    }
-    else
+    } else
       return 0;
   }
 }
 
-
-
-void loop()
-{
+void loop() {
   BTtoUART();
-  if (shouldLog())
-  {
+  if (shouldLog()) {
     SensorValues currentValues = getSensorValues();
     logValues(currentValues);
     writeToBluetoothSerial(currentValues);
