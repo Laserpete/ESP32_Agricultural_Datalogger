@@ -20,10 +20,8 @@ void setupVeml7700() {
   }
 }
 void printVeml7700() {
-  // Read Lux
-
   int lux = veml7700.readLux();
-  Serial.print("Luminosity  = ");
+  Serial.print("Luminosity = ");
   Serial.print(lux);
   Serial.println(" Lux");
 }

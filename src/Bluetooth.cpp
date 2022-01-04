@@ -22,7 +22,7 @@ void writeToBluetoothSerial(SensorValues receivedValues) {
   SerialBT.print("CO2 Level = ");
   SerialBT.print(receivedValues.cO2Level);
   SerialBT.println(" PPM");
-  SerialBT.print("Luminosity = ");
+  SerialBT.print("Luminosity =  ");
   SerialBT.print(receivedValues.luminosity);
   SerialBT.println(" Lux");
   SerialBT.println();
