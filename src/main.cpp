@@ -64,7 +64,6 @@ WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, NTP_ADDRESS, NTP_OFFSET, NTP_INTERVAL);
 const char *thingSpeakServerName = "http://api.thingspeak.com/update";
 long long lastMillis = 0;
-bool wifiGo = 0;
 
 bool setupWiFi() {
   Serial.print("Connecting to ");
@@ -103,7 +102,7 @@ void setup() {
   setupBluetooth();
   IICScanner();
   setupSensors();
-  wifiGo = setupWiFi();
+  setupWiFi();
   measureBatteryVoltage();
   Serial.println("Setup Finished");
   Serial.println();
@@ -185,7 +184,7 @@ void logToThingSpeak(SensorValues receivedValues) {
 }
 
 void logValues(SensorValues receivedValues) {
-  if (wifiGo) {
+  if (WiFi.status() == WL_CONNECTED) {
     logToThingSpeak(receivedValues);
   }
 // printSensorDataCSV(receivedValues);
@@ -199,7 +198,7 @@ void logValues(SensorValues receivedValues) {
 }
 
 bool shouldLog() {
-  if (wifiGo) {
+  if (WiFi.status() == WL_CONNECTED) {
     timeClient.forceUpdate();
     int currentTimeClientMinutes = timeClient.getMinutes();
     return ((currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO == 0) &&
@@ -208,7 +207,7 @@ bool shouldLog() {
     Serial.print("Modulo of minutes = ");
     Serial.println(currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO);
 #endif
-    // Also need a latch here since this is probably the cause of double
+    // Also need a latch here since this is the cause of double
     // readings - logging twice in the second
   } else {
     if (millis() >= (lastMillis + (MEASUREMENT_MINUTES_MODULO * 60 * 1000))) {
