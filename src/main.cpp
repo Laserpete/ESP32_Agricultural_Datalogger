@@ -202,15 +202,15 @@ bool shouldLog() {
   if (wifiGo) {
     timeClient.forceUpdate();
     int currentTimeClientMinutes = timeClient.getMinutes();
+    return ((currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO == 0) &&
+            (timeClient.getSeconds() == 0));
 #ifdef DEBUG
     Serial.print("Modulo of minutes = ");
     Serial.println(currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO);
 #endif
-    return ((currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO == 0) &&
-            (timeClient.getSeconds() == 0));
     // Also need a latch here since this is probably the cause of double
     // readings - logging twice in the second
-  } else if (!wifiGo) {
+  } else {
     if (millis() >= (lastMillis + (MEASUREMENT_MINUTES_MODULO * 60 * 1000))) {
       lastMillis = millis();
       return 1;
