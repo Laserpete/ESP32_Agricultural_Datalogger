@@ -177,7 +177,11 @@ void postDataToThingSpeak(String thingSpeakPostString) {
   Serial.print(":");
   Serial.print(timeClient.getMinutes());
   Serial.print(":");
-  Serial.println(timeClient.getSeconds());
+  Serial.print(timeClient.getSeconds());
+  if (timeClient.getSeconds() == 0) {
+    Serial.print("0");
+  }
+  Serial.println();
 }
 
 void logToThingSpeak(SensorValues receivedValues) {
