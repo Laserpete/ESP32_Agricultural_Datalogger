@@ -10,7 +10,6 @@ void measureBatteryVoltage() {
   Serial.print(voltage);
   Serial.println(" V");
   if (voltage >= 3.7) {
-    Serial.println(
-        "Battery is fully charged... or you're connected to USB power");
+    Serial.println("Battery is fully charged... or USB power is connected");
   }
 }
