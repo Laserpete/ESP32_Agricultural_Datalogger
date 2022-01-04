@@ -64,6 +64,7 @@ WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, NTP_ADDRESS, NTP_OFFSET, NTP_INTERVAL);
 const char *thingSpeakServerName = "http://api.thingspeak.com/update";
 long long lastMillis = 0;
+bool logged = 0;
 
 bool setupWiFi() {
   Serial.print("Connecting to ");
@@ -84,6 +85,7 @@ bool setupWiFi() {
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
     timeClient.begin();
+    timeClient.setTimeOffset(3600);
     return 1;
   } else {
     Serial.println();
@@ -209,14 +211,18 @@ void logValues(SensorValues receivedValues) {
 bool shouldLog() {
   if (WiFi.status() == WL_CONNECTED) {
     timeClient.forceUpdate();
+    if (timeClient.getSeconds() >= 1) {
+      logged = 0;
+    }
     int currentTimeClientMinutes = timeClient.getMinutes();
     if ((currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO == 0) &&
-        (timeClient.getSeconds() == 0) && (millis() >= (lastMillis + 800))) {
-      lastMillis = millis();
+        (timeClient.getSeconds() == 0) && !logged) {
+      logged = 1;
       return 1;
     } else {
       return 0;
     }
+
   } else {
     if (millis() >= (lastMillis + (MEASUREMENT_MINUTES_MODULO * 60 * 1000))) {
       lastMillis = millis();
