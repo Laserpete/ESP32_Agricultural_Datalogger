@@ -181,12 +181,15 @@ void postDataToThingSpeak(String thingSpeakPostString) {
   Serial.print("Data sent at ");
   Serial.print(timeClient.getHours());
   Serial.print(":");
-  Serial.print(timeClient.getMinutes());
-  Serial.print(":");
-  Serial.print(timeClient.getSeconds());
-  if (timeClient.getSeconds() == 0) {
+  if (timeClient.getMinutes() <= 9) {
     Serial.print("0");
   }
+  Serial.print(timeClient.getMinutes());
+  Serial.print(":");
+  if (timeClient.getSeconds() <= 9) {
+    Serial.print("0");
+  }
+  Serial.print(timeClient.getSeconds());
   Serial.println();
 }
 
