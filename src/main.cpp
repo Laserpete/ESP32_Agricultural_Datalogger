@@ -71,19 +71,33 @@ bool setupWiFi() {
   Serial.println(ssid);
   lastMillis = millis();
   WiFi.begin(ssid, password);
-  while ((millis() <= (WIFI_CONNECT_SECONDS * 1000)) &&
-         (WiFi.status() != WL_CONNECTED)) {
-    delay(500);
-    Serial.print(".");
-  }
+  WiFi.waitForConnectResult();
+  /* while ((millis() <= (WIFI_CONNECT_SECONDS * 1000)) &&
+          (WiFi.status() != WL_CONNECTED)) {
+     delay(500);
+     Serial.print(".");
+
+  */
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println();
-    Serial.print("Connected in ");
-    Serial.print(millis() - lastMillis);
-    Serial.println(" mS");
-    Serial.print("IP address: ");
+    /* Serial.println();
+     Serial.print("Connected in ");
+     Serial.print(millis() - lastMillis);
+     Serial.println(" mS");
+     */
+    Serial.println("Connected to WiFi");
+    Serial.print("Local IP address: ");
     Serial.println(WiFi.localIP());
+    Serial.print("DNS IP address: ");
+    Serial.println(WiFi.dnsIP());
+    // Assign static DNS IP address
+
+    WiFi.config(WiFi.localIP(), WiFi.gatewayIP(), WiFi.subnetMask(),
+                IPAddress(8, 8, 8, 8));
+    delay(10);
+    Serial.print("DNS IP address: ");
+    Serial.println(WiFi.dnsIP());
+
     timeClient.begin();
     timeClient.setTimeOffset(3600);
     return 1;
