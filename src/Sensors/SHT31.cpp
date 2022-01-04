@@ -18,8 +18,13 @@ float readSHT31Temperature(void) {
 }
 
 float readSHT31Humidity(void) {
-  float h;
-  return h = sht31.readHumidity();
+  float h = sht31.readHumidity();
+  if (h >= 99) {
+    sht31.heater(1);
+  } else {
+    sht31.heater(0);
+  }
+  return h;
 }
 
 void printSHT31(void) {
