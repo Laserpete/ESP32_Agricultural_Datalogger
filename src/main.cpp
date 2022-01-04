@@ -172,7 +172,12 @@ void postDataToThingSpeak(String thingSpeakPostString) {
   Serial.println(httpResponseCode);
 
   http.end();
-  Serial.println("Data sent");
+  Serial.print("Data sent at ");
+  Serial.print(timeClient.getHours());
+  Serial.print(":");
+  Serial.print(timeClient.getMinutes());
+  Serial.print(":");
+  Serial.println(timeClient.getSeconds());
 }
 
 void logToThingSpeak(SensorValues receivedValues) {
@@ -201,14 +206,13 @@ bool shouldLog() {
   if (WiFi.status() == WL_CONNECTED) {
     timeClient.forceUpdate();
     int currentTimeClientMinutes = timeClient.getMinutes();
-    return ((currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO == 0) &&
-            (timeClient.getSeconds() == 0));
-#ifdef DEBUG
-    Serial.print("Modulo of minutes = ");
-    Serial.println(currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO);
-#endif
-    // Also need a latch here since this is the cause of double
-    // readings - logging twice in the second
+    if ((currentTimeClientMinutes % MEASUREMENT_MINUTES_MODULO == 0) &&
+        (timeClient.getSeconds() == 0) && (millis() >= (lastMillis + 800))) {
+      lastMillis = millis();
+      return 1;
+    } else {
+      return 0;
+    }
   } else {
     if (millis() >= (lastMillis + (MEASUREMENT_MINUTES_MODULO * 60 * 1000))) {
       lastMillis = millis();
