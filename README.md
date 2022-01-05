@@ -4,9 +4,6 @@ I'm building the because I want to accurately measure the environmental paramete
 
 The Datalogger is capable of measuring;
 
-=============================
-------------------------------------------------
-
     |Parameter   |Sensor      |
     | ---------- | ----------:|
     |Temperature |SHT31       |
